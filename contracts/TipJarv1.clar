@@ -1,62 +1,41 @@
 ;; --------------------------------------------------
-;; Contrato #1: Digital Tip Jar (Reown Ready)
+;; Contrato #1: Digital Tip Jar (Versión Ultrarrápida)
 ;; --------------------------------------------------
 
 ;; 1. Variables de datos
+(define-constant OWNER tx-sender) ;; El que despliega el contrato recibe las propinas
 (define-data-var total-tips uint u0)
-(define-data-var top-donor principal tx-sender)
-(define-data-var max-tip uint u0)
 
-;; 2. Mapas para estadísticas
-(define-map donor-stats principal { total-sent: uint, last-tip: uint })
+;; 2. Mapa para guardar cuánto ha dado cada uno
+(define-map donor-stats principal uint)
 
 ;; 3. Funciones Públicas
 
-;; Enviar una propina (Transaction ready)
+;; Función para enviar propina - ¡ESTA NO FALLA!
 (define-public (send-tip (amount uint))
-    (let (
-        (sender tx-sender)
-        (current-total (get total-sent (default-to { total-sent: u0, last-tip: u0 } (map-get? donor-stats sender))))
-    )
-        ;; Aserción: La propina debe ser mayor a 0
+    (begin
+        ;; Aserción básica
         (asserts! (> amount u0) (err u101))
         
-        ;; Transferencia de STX al contrato (custodia)
-        (try! (stx-transfer? amount sender (as-contract tx-sender)))
+        ;; Transferencia directa de STX del emisor al dueño
+        (try! (stx-transfer? amount tx-sender OWNER))
         
-        ;; Actualizar estadísticas del donante
-        (map-set donor-stats sender { 
-            total-sent: (+ current-total amount), 
-            last-tip: amount 
-        })
+        ;; Actualizar el mapa de donantes
+        (map-set donor-stats tx-sender (+ (default-to u0 (map-get? donor-stats tx-sender)) amount))
         
-        ;; Actualizar total global
+        ;; Actualizar el contador global
         (var-set total-tips (+ (var-get total-tips) amount))
         
-        ;; Comprobar si es el nuevo donante máximo
-        (if (> amount (var-get max-tip))
-            (begin
-                (var-set max-tip amount)
-                (var-set top-donor sender)
-            )
-            false
-        )
-        
-        (print { event: "tip-received", donor: sender, amount: amount })
         (ok true)
     )
 )
 
-;; 4. Funciones de Lectura (Para AppKit UI)
+;; 4. Funciones de Lectura
 
-(define-read-only (get-global-stats)
-    {
-        total: (var-get total-tips),
-        record: (var-get max-tip),
-        leader: (var-get top-donor)
-    }
+(define-read-only (get-total)
+    (ok (var-get total-tips))
 )
 
-(define-read-only (get-my-stats (user principal))
-    (default-to { total-sent: u0, last-tip: u0 } (map-get? donor-stats user))
+(define-read-only (get-user-total (user principal))
+    (ok (default-to u0 (map-get? donor-stats user)))
 )
