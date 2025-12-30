@@ -1,12 +1,12 @@
 [project]
-name = "blank-project"
+name = "TipJarv1"
 description = "Create a project from scratch: Start from a blank scaffold for your next Clarity contract"
 authors = []
 telemetry = true
 cache_dir = "./.cache"
 
-# [contracts.CHANGE-THIS-TO-YOUR-CONTRACT-NAME]
-# path = "contracts/CHANGE-THIS-TO-YOUR-CONTRACT-NAME.clar"
+# [contracts.TipJarv1]
+# path = "contracts/TipJarv1.clar"
 
 [repl.analysis]
 passes = ["check_checker"]
